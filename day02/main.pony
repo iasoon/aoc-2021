@@ -3,69 +3,72 @@ use "files"
 actor Main
   new create(env: Env) =>
     try
-      match env.args(1)?
-      | "1" => Part1(env)
-      | "2" => Part2(env)
+      let sub = match env.args(1)?
+      | "1" => Driver(env, Submarine1)
+      | "2" => Driver(env, Submarine2)
       end
     end
 
 
-actor Part1
-  new create(env: Env) =>
+actor Driver
+  new create(env: Env, sub: Submarine tag) =>
     try
       with file = OpenFile(
         FilePath(env.root as AmbientAuth, env.args(2)?)) as File
       do
         var lines = file.lines()
 
-        var depth: U64 = 0
-        var pos: U64 = 0
-
         for line in file.lines() do
           let parts = line.split_by(" ")
-  
-          match parts(0)?
-          | "forward" =>
-              pos = pos + parts(1)?.u64()?
-          | "up" =>
-              depth = depth - parts(1)?.u64()?
-          | "down" =>
-              depth = depth + parts(1)?.u64()?
-          end
+          sub.handle_command(parts(0)?, parts(1)?.u64()?)
         end
 
-        env.out.print((depth * pos).string())
+        sub.print_output(env)
       end
     end
 
 
-actor Part2
-  new create(env: Env) =>
-    try
-      with file = OpenFile(
-        FilePath(env.root as AmbientAuth, env.args(2)?)) as File
-      do
-        var lines = file.lines()
+interface Submarine
+  be handle_command(command: String, amount: U64)
+  be print_output(env: Env)
 
-        var depth: U64 = 0
-        var pos: U64 = 0
-        var aim: U64 = 0
 
-        for line in file.lines() do
-          let parts = line.split_by(" ")
-          var amount = parts(1)?.u64()?
-  
-          match parts(0)?
-          | "forward" =>
-              pos = pos + amount
-              depth = depth + (aim * amount)
-          | "up" =>
-              aim = aim - amount
-          | "down" =>
-              aim = aim + amount
-          end
-        end
+actor Submarine1
+  var horizontal_position: U64 = 0
+  var depth: U64 = 0
 
-        env.out.print((depth * pos).string())
-      end
+  be handle_command(command: String, amount: U64) =>
+    match command
+    | "forward" =>
+        horizontal_position = horizontal_position + amount
+    | "up" =>
+        depth = depth - amount
+    | "down" =>
+        depth = depth + amount
     end
+  
+  be print_output(env: Env) =>
+    let result = horizontal_position * depth
+    env.out.print((result).string())
+
+
+actor Submarine2
+  var horizontal_position: U64 = 0
+  var depth: U64 = 0
+  var aim: U64 = 0
+
+  be handle_command(command: String, amount: U64) =>
+    match command
+    | "forward" =>
+        horizontal_position = horizontal_position + amount
+        depth = depth + (aim * amount)
+    | "up" =>
+        aim = aim - amount
+    | "down" =>
+        aim = aim + amount
+    end
+  
+  be print_output(env: Env) =>
+    let result = horizontal_position * depth
+    env.out.print((result).string())
+
