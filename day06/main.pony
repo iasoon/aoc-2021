@@ -18,27 +18,43 @@ actor Main
     end
 
   fun solve(file: File, num_days: U64): U64? =>
+    // how many periods it takes to reproduce
+    let cycle_length: USize = 7
+    // how many periods before a fish is an adult
+    let growth_duration: USize = 2
+
+
     let line: String = file.lines().next()?
 
     // start with an empty state vector
-    let state = Array[U64].init(0, 9)
+    let adults = Array[U64].init(0, cycle_length)
 
     for str in line.split_by(",").values() do
       let num: USize = str.usize()?
-      state(num)? = state(num)? + 1
+      adults(num)? = adults(num)? + 1
     end
 
-    for day_num in Range[U64](0, num_days) do
-      let reproducing = state(0)?
-      for i in Range(0, 8) do
-        state(i)? = state(i+1)?
-      end
-      state(8)? = reproducing
-      state(6)? = state(6)? + reproducing
+    let children = Array[U64].init(0, growth_duration)
+
+    for day_num in Range(0, num_days.usize()) do
+      let adult_pos = day_num % cycle_length
+      let child_pos = day_num % growth_duration
+
+      let new_adults = children(child_pos)?
+
+      let adults_reproducing = adults(adult_pos)?
+      adults(adult_pos)? = adults_reproducing + new_adults
+      children(child_pos)? = adults_reproducing
     end
 
+    // count fishes
     var num_fishes: U64 = 0
-    for count in state.values() do
+
+    for count in adults.values() do
+      num_fishes = num_fishes + count
+    end
+  
+    for count in children.values() do
       num_fishes = num_fishes + count
     end
 
